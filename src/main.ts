@@ -22,6 +22,8 @@ const mainFunc = async () => {
 
     const postTitleAndUrls = getTitleAndPostUrls(nodes);
 
+    if (!postTitleAndUrls) return;
+
     // console.log(JSON.stringify(results));
     console.log(postTitleAndUrls);
 
@@ -40,25 +42,25 @@ const encodingFunc = async (buffer: Buffer) => {
   return encoding;
 };
 
-
 // タイトルと記事タイトルのリンク取得
 const getTitleAndPostUrls = (nodes: NodeListOf<Element>) => {
   const results = Array.from(nodes).map(el => {
     const titleHeading = el.querySelector('h2 > a');
     const date = el.querySelector('.clear > .date');
+    const comment = el.querySelector('.clear > a:nth-of-type(1)');
 
-    if (!titleHeading || !date) return;
+    if (!titleHeading || !date || !comment) return;
 
-    const titleText = titleHeading.textContent?.trim();
-    const postUrl = titleHeading.getAttribute('href');
-    const createdAt = date.textContent?.trim();
-
-    if (!titleText || !postUrl || !createdAt) return;
+    const title = titleHeading.textContent?.trim() as string;
+    const url = titleHeading.getAttribute('href') as string;
+    const createdAt = replacementDateStr(date.textContent?.trim() as string);
+    const commentCount = comment.textContent?.trim() as string;
 
     const posts = {
-      title: titleText,
-      url: postUrl,
-      createdAt: replacementDateStr(createdAt),
+      title: title,
+      url: url,
+      createdAt: createdAt,
+      comment: parseInt(pickCommentCount(commentCount) as string),
     };
 
     return posts;
@@ -70,6 +72,17 @@ const getTitleAndPostUrls = (nodes: NodeListOf<Element>) => {
 // 日付の整形
 const replacementDateStr = (date: string) => {
   return date.replace(/[年|月|日]/g, '-').replace(/-$/g, '');
+};
+
+// コメントのテキストからコメント数だけ抜き出す
+const pickCommentCount = (comment: string) => {
+  const find = comment.match(/[0-9]+/);
+  
+  if (!find) return;
+  
+  const commentCount = find[0];
+
+  return commentCount;
 };
 
 mainFunc();
