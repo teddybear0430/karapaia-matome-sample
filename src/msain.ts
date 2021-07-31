@@ -2,25 +2,51 @@ import fetch from 'node-fetch';
 import chardet from 'chardet';
 import iconv from 'iconv-lite';
 import jsdom from 'jsdom';
+import { config } from './config';
 
 const { JSDOM } = jsdom;
 
-const URL = 'https://karapaia.com/';
-
 // メインの処理
 const mainFunc = async () => {
-  const res = await fetch(URL);
-  const buffer = await res.buffer();
-  const encoding = await encodingFunc(buffer);
+  try {
+    const { url } = config;
+    const res = await fetch(url);
+    const buffer = await res.buffer();
+    const encoding = await encodingFunc(buffer);
 
-  const html = iconv.decode(buffer, encoding);
-   
-  const dom = new JSDOM(html);
-  const document = dom.window.document;
-  const nodes = document.querySelectorAll('.widget-header > h2');
+    const html = iconv.decode(buffer, encoding);
 
-  const results = Array.from(nodes, el => el.textContent?.trim());
-  console.log(results);
+    const dom = new JSDOM(html);
+    const document = dom.window.document;
+    const nodes = document.querySelectorAll('.widget-header h2 > a');
+    const postTitleAndUrls = getTitleAndPostUrls(nodes);
+
+    // console.log(JSON.stringify(results));
+    console.log(postTitleAndUrls);
+
+    return postTitleAndUrls;
+  } catch(er) {
+    console.error(er);
+  }
+};
+
+// タイトルと記事タイトルのリンク取得
+const getTitleAndPostUrls = (nodes: NodeListOf<Element>) => {
+  const results = Array.from(nodes).map(el => {
+    const titleText = el.textContent?.trim();
+    const postUrl = el.getAttribute('href');
+
+    if (!titleText || !postUrl) return;
+
+    const posts = {
+      title: titleText,
+      url: postUrl,
+    };
+
+    return posts;
+  });
+
+  return results;
 };
 
 // 文字コードの取得
