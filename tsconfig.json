@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "outDir": "./dist/",
+    "rootDir": "./src/", 
+    "allowSyntheticDefaultImports": true,
+    "declaration": true,
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "outDir": "dist",
+    "pretty": true,
+    "skipLibCheck": true,
+    "sourceMap": false,
+    "strict": true,
+    "esModuleInterop": true,
+    "target": "ES2015"
+  },
+  "include": ["src/**/*"]
+}
