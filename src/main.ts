@@ -18,7 +18,8 @@ const mainFunc = async () => {
 
     const dom = new JSDOM(html);
     const document = dom.window.document;
-    const nodes = document.querySelectorAll('.widget-header h2 > a');
+    const nodes = document.querySelectorAll('.widget-header');
+
     const postTitleAndUrls = getTitleAndPostUrls(nodes);
 
     // console.log(JSON.stringify(results));
@@ -30,17 +31,34 @@ const mainFunc = async () => {
   }
 };
 
+// 文字コードの取得
+const encodingFunc = async (buffer: Buffer) => {
+  const encoding = chardet.detect(Buffer.from(buffer));
+
+  if (!encoding) throw new Error();
+
+  return encoding;
+};
+
+
 // タイトルと記事タイトルのリンク取得
 const getTitleAndPostUrls = (nodes: NodeListOf<Element>) => {
   const results = Array.from(nodes).map(el => {
-    const titleText = el.textContent?.trim();
-    const postUrl = el.getAttribute('href');
+    const titleHeading = el.querySelector('h2 > a');
+    const date = el.querySelector('.clear > .date');
 
-    if (!titleText || !postUrl) return;
+    if (!titleHeading || !date) return;
+
+    const titleText = titleHeading.textContent?.trim();
+    const postUrl = titleHeading.getAttribute('href');
+    const createdAt = date.textContent?.trim();
+
+    if (!titleText || !postUrl || !createdAt) return;
 
     const posts = {
       title: titleText,
       url: postUrl,
+      createdAt: replacementDateStr(createdAt),
     };
 
     return posts;
@@ -49,13 +67,9 @@ const getTitleAndPostUrls = (nodes: NodeListOf<Element>) => {
   return results;
 };
 
-// 文字コードの取得
-const encodingFunc = async (buffer: Buffer) => {
-  const encoding = chardet.detect(Buffer.from(buffer));
-
-  if (!encoding) throw new Error();
-
-  return encoding;
+// 日付の整形
+const replacementDateStr = (date: string) => {
+  return date.replace(/[年|月|日]/g, '-').replace(/-$/g, '');
 };
 
 mainFunc();
