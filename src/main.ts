@@ -13,7 +13,7 @@ export const mainFunc = async () => {
   try {
     // MEMO: Promise.allでawaitする方法
     // https://stackoverflow.com/questions/31710768/how-can-i-fetch-an-array-of-urls-with-promise-all
-    const results = await Promise.all(urls.map(async url => {
+    const data = await Promise.all(urls.map(async url => {
       const res = await fetch(url);
       const buffer = await res.buffer();
       const encoding = await encodingFunc(buffer);
@@ -27,7 +27,12 @@ export const mainFunc = async () => {
       return scrapingFunc(nodes);
     }));
 
-    if (!results) return;
+    if (!data) return;
+
+    // 多次元配列になってしまっているので、一次元配列に変換する
+    const results = data.reduce((prev, current) => {
+      return [...prev, ...current];
+    }, []);
 
     console.log(JSON.stringify(results));
     console.log(results);
