@@ -3,24 +3,29 @@ import chardet from 'chardet';
 import iconv from 'iconv-lite';
 import jsdom from 'jsdom';
 import { config } from './config';
-
 const { JSDOM } = jsdom;
 
 // メインの処理
-const mainFunc = async () => {
+export const mainFunc = async () => {
+  const { url, pageNum } = config;
+  const urls = [...Array(pageNum)].map((_, i) => `${url}?p=${++i}`);
+
   try {
-    const { url } = config;
-    const res = await fetch(url);
-    const buffer = await res.buffer();
-    const encoding = await encodingFunc(buffer);
+    // MEMO: Promise.allでawaitする方法
+    // https://stackoverflow.com/questions/31710768/how-can-i-fetch-an-array-of-urls-with-promise-all
+    const results = await Promise.all(urls.map(async url => {
+      const res = await fetch(url);
+      const buffer = await res.buffer();
+      const encoding = await encodingFunc(buffer);
 
-    const html = iconv.decode(buffer, encoding);
+      const html = iconv.decode(buffer, encoding);
 
-    const dom = new JSDOM(html);
-    const document = dom.window.document;
-    const nodes = document.querySelectorAll('.widget-header');
+      const dom = new JSDOM(html);
+      const document = dom.window.document;
+      const nodes = document.querySelectorAll('.widget-header');
 
-    const results = scrapingFunc(nodes);
+      return scrapingFunc(nodes);
+    }));
 
     if (!results) return;
 
@@ -33,7 +38,8 @@ const mainFunc = async () => {
   }
 };
 
-// 文字コードの取得
+// 文字コードの取得・・・UTF8ではなく、euc-jpのため
+// そのままHTMLを取得してパースすると文字化けしてしまった
 const encodingFunc = async (buffer: Buffer) => {
   const encoding = chardet.detect(Buffer.from(buffer));
 
@@ -103,5 +109,3 @@ const getInnerText = (el: Element) => {
 const getHref = (el: Element) => {
   return el.getAttribute('href') as string;
 };
-
-mainFunc();
