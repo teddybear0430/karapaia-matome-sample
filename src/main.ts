@@ -20,14 +20,14 @@ const mainFunc = async () => {
     const document = dom.window.document;
     const nodes = document.querySelectorAll('.widget-header');
 
-    const postTitleAndUrls = getTitleAndPostUrls(nodes);
+    const results = scrapingFunc(nodes);
 
-    if (!postTitleAndUrls) return;
+    if (!results) return;
 
-    // console.log(JSON.stringify(results));
-    console.log(postTitleAndUrls);
+    console.log(JSON.stringify(results));
+    console.log(results);
 
-    return postTitleAndUrls;
+    return results;
   } catch(er) {
     console.error(er);
   }
@@ -42,25 +42,34 @@ const encodingFunc = async (buffer: Buffer) => {
   return encoding;
 };
 
-// タイトルと記事タイトルのリンク取得
-const getTitleAndPostUrls = (nodes: NodeListOf<Element>) => {
+// スクレイピングの実行
+const scrapingFunc = (nodes: NodeListOf<Element>) => {
   const results = Array.from(nodes).map(el => {
     const titleHeading = el.querySelector('h2 > a');
     const date = el.querySelector('.clear > .date');
     const comment = el.querySelector('.clear > a:nth-of-type(1)');
+    const archiveFirst = el.querySelector('.clear > a:nth-of-type(2)');
+    const archiveSecond = el.querySelector('.clear > a:nth-of-type(3)');
 
-    if (!titleHeading || !date || !comment) return;
+    if (!titleHeading || !date || !comment || !archiveFirst || !archiveSecond) return;
 
-    const title = titleHeading.textContent?.trim() as string;
-    const url = titleHeading.getAttribute('href') as string;
-    const createdAt = replacementDateStr(date.textContent?.trim() as string);
-    const commentCount = comment.textContent?.trim() as string;
+    const commentCount = getInnerText(comment);
 
     const posts = {
-      title: title,
-      url: url,
-      createdAt: createdAt,
+      title: getInnerText(titleHeading),
+      url: getHref(titleHeading),
+      createdAt: replacementDateStr(getInnerText(date)),
       comment: parseInt(pickCommentCount(commentCount) as string),
+      archives: [
+        {
+          catName: getInnerText(archiveFirst),
+          catUrl: getHref(archiveFirst),
+        },
+        {
+          catName: getInnerText(archiveSecond),
+          catUrl: getHref(archiveSecond),
+        }
+      ],
     };
 
     return posts;
@@ -83,6 +92,16 @@ const pickCommentCount = (comment: string) => {
   const commentCount = find[0];
 
   return commentCount;
+};
+
+// タグ内部のテキストを取得
+const getInnerText = (el: Element) => {
+  return el.textContent?.trim() as string;
+};
+
+// タグ内部のリンクを取得
+const getHref = (el: Element) => {
+  return el.getAttribute('href') as string;
 };
 
 mainFunc();
